@@ -1,0 +1,143 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the Island Vibes platform.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "displayName": { "type": "string" },
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["customer", "dispensary_admin", "super_admin"] },
+        "birthdate": { "type": "string" },
+        "isAgeVerified": { "type": "boolean" },
+        "favoriteDispensaryIds": { "type": "array", "items": { "type": "string" } },
+        "favoriteProductIds": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "displayName", "email", "role", "isAgeVerified", "createdAt"]
+    },
+    "Dispensary": {
+      "title": "Dispensary",
+      "description": "A licensed cannabis dispensary in the USVI.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "description": { "type": "string" },
+        "logoURL": { "type": "string" },
+        "coverURL": { "type": "string" },
+        "address": { "type": "string" },
+        "island": { "type": "string", "enum": ["St. Thomas", "St. John", "St. Croix"] },
+        "deliveryAvailable": { "type": "boolean" },
+        "pickupAvailable": { "type": "boolean" },
+        "averageRating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "verified": { "type": "boolean" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "name", "slug", "island", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A cannabis product available at a dispensary.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "dispensaryId": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["flower", "preroll", "edible", "vape", "concentrate", "tincture", "accessory"] },
+        "strainType": { "type": "string", "enum": ["indica", "sativa", "hybrid"] },
+        "thc": { "type": "number" },
+        "cbd": { "type": "number" },
+        "price": { "type": "number" },
+        "salePrice": { "type": "number" },
+        "brand": { "type": "string" },
+        "description": { "type": "string" },
+        "imageURLs": { "type": "array", "items": { "type": "string" } },
+        "inStock": { "type": "boolean" },
+        "terpeneTags": { "type": "array", "items": { "type": "string" } },
+        "effectTags": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["id", "dispensaryId", "name", "category", "price", "inStock", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A user review for a dispensary or product.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "dispensaryId": { "type": "string" },
+        "productId": { "type": "string" },
+        "rating": { "type": "number" },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "imageURLs": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "rating", "body", "createdAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A pickup or delivery order.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "dispensaryId": { "type": "string" },
+        "subtotal": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "ready", "completed", "cancelled"] },
+        "fulfillmentType": { "type": "string", "enum": ["pickup", "delivery"] },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "dispensaryId", "subtotal", "status", "fulfillmentType", "createdAt"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A community post.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "dispensaryId": { "type": "string" },
+        "text": { "type": "string" },
+        "imageURLs": { "type": "array", "items": { "type": "string" } },
+        "likesCount": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["id", "userId", "text", "likesCount", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/dispensaries/{dispensaryId}": {
+      "schema": "Dispensary",
+      "description": "Dispensary information."
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Product listings."
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "User reviews."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Order records."
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Community posts."
+    }
+  }
+}

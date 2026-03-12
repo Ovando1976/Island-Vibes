@@ -1,0 +1,5 @@
+{
+  "name": "Island Vibes",
+  "description": "A legal cannabis community, ordering, and discovery platform for the U.S. Virgin Islands.",
+  "requestFramePermissions": ["geolocation"]
+}
