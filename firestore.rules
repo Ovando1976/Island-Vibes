@@ -7,17 +7,40 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    function isAdmin() {
-      return isAuthenticated() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         (request.auth.token.email == "OvandoRawlins@gmail.com" && request.auth.token.email_verified == true));
+
+    function userDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
     }
-    function isDispensaryAdmin(dispensaryId) {
-       // This would need a way to link users to dispensaries, for now simplified
-       return isAdmin();
+
+    function hasUserDoc() {
+      return isAuthenticated() && exists(userDocPath());
+    }
+
+    function userRole() {
+      return hasUserDoc() ? get(userDocPath()).data.role : null;
+    }
+
+    function isSuperAdmin() {
+      return userRole() == 'super_admin';
+    }
+
+    function isDispensaryAdmin() {
+      return userRole() == 'dispensary_admin';
+    }
+
+    function isAdmin() {
+      return isSuperAdmin() || isDispensaryAdmin();
+    }
+
+    function canManageDispensary(dispensaryId) {
+      return isSuperAdmin() ||
+        (isDispensaryAdmin() &&
+         hasUserDoc() &&
+         get(userDocPath()).data.dispensaryId == dispensaryId);
     }
 
     // ===============================================================
@@ -25,29 +48,38 @@ service cloud.firestore {
     // ===============================================================
     function isValidUser(data) {
       return data.keys().hasAll(['id', 'displayName', 'email', 'role', 'isAgeVerified', 'createdAt']) &&
-             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
-             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
-             data.role in ['customer', 'dispensary_admin', 'super_admin'];
+        data.displayName is string &&
+        data.displayName.size() > 0 &&
+        data.displayName.size() < 100 &&
+        data.email is string &&
+        data.email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$') &&
+        data.role in ['customer', 'dispensary_admin', 'super_admin'];
+    }
+
+    function isPublishedDoc() {
+      return resource.data.published == true;
     }
 
     // ===============================================================
     // Rules
     // ===============================================================
-
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
-      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isAdmin());
+      allow read: if isOwner(userId) || isSuperAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isSuperAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(userId) || isSuperAdmin());
+      allow delete: if isSuperAdmin();
     }
 
     match /dispensaries/{dispensaryId} {
-      allow read: if true; // Public directory
-      allow write: if isAdmin();
+      allow read: if resource.data.published == true || isAdmin();
+      allow create, update, delete: if canManageDispensary(dispensaryId);
     }
 
     match /products/{productId} {
-      allow read: if true; // Public menu
-      allow write: if isAdmin(); // Simplified for MVP
+      allow read: if resource.data.published == true || isAdmin();
+      allow create, update: if isAuthenticated() &&
+        canManageDispensary(request.resource.data.dispensaryId);
+      allow delete: if isAuthenticated() && canManageDispensary(resource.data.dispensaryId);
     }
 
     match /reviews/{reviewId} {
@@ -57,15 +89,29 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
+         canManageDispensary(resource.data.dispensaryId));
+      allow update: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
+         canManageDispensary(resource.data.dispensaryId));
+      allow delete: if isSuperAdmin();
+    }
+
+    match /favorites/{userId}/items/{productId} {
+      allow read, write: if isOwner(userId) || isSuperAdmin();
+    }
+
+    match /adminLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
     }
 
     match /posts/{postId} {
       allow read: if true;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isSuperAdmin());
     }
   }
 }
