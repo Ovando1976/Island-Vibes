@@ -120,6 +120,12 @@ Island-Vibes/
 - `/admin/dispensaries`
 - `/admin/users`
 
+## Product Blueprints
+
+- [USVI Live Product Blueprint](./docs/usvi-live-product-blueprint.md)
+- [USVI Live Build Plan (30-Day)](./docs/usvi-live-build-plan.md)
+- [USVI Live Firestore Schema (MVP)](./docs/usvi-live-firestore.schema.md)
+
 ## Environment Variables
 
 Use separate env vars for client and server concerns.
